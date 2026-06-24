@@ -30,18 +30,21 @@
 }
 
 .app-search {
-  flex: 1;
+  flex-grow: 0;
+  flex-shrink: 1;
+  width: 220px;
   min-width: 0;
-  max-width: 480px;
   padding: 0.55rem 1rem;
   border-radius: 999px;
   border: 1px solid #ddd;
   background: #f5f5f5;
   font-size: 1rem;
   order: 3;
+  transition: width 0.2s ease;
 }
 
 .app-search:focus {
+  width: 420px;
   outline: none;
   border-color: #d6336c;
   background: white;
@@ -123,9 +126,10 @@ main {
     padding: 0.75rem 1rem;
   }
 
-  .app-search {
+  .app-search,
+  .app-search:focus {
     flex-basis: 100%;
-    max-width: none;
+    width: 100%;
   }
 
   .app-icon-button {

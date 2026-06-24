@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
+import { AboutPage } from '../pages/AboutPage'
 import { TermsPage } from '../pages/TermsPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { getInitialDeepLink, setDeepLinkParam } from '../lib/deepLink'
 import './Footer.css'
 
-type LegalPage = 'terms' | 'privacy' | null
+type LegalPage = 'about' | 'terms' | 'privacy' | null
+
+function isLegalPageValue(value: string | null): value is Exclude<LegalPage, null> {
+  return value === 'about' || value === 'terms' || value === 'privacy'
+}
 
 function readInitialLegalPage(): LegalPage {
   const link = getInitialDeepLink()
-  if (link?.key === 'legal' && (link.value === 'terms' || link.value === 'privacy')) return link.value
+  if (link?.key === 'legal' && isLegalPageValue(link.value)) return link.value
   return null
 }
 
 function readLegalPageFromUrl(): LegalPage {
   const value = new URLSearchParams(window.location.search).get('legal')
-  return value === 'terms' || value === 'privacy' ? value : null
+  return isLegalPageValue(value) ? value : null
 }
 
 export function Footer() {
@@ -36,6 +41,10 @@ export function Footer() {
   return (
     <>
       <footer className="app-footer">
+        <button type="button" onClick={() => openLegalPage('about')}>
+          About Us
+        </button>
+        <span>·</span>
         <button type="button" onClick={() => openLegalPage('terms')}>
           Terms of Service
         </button>
@@ -47,7 +56,9 @@ export function Footer() {
 
       {legalPage && (
         <div className="legal-overlay">
-          {legalPage === 'terms' ? (
+          {legalPage === 'about' ? (
+            <AboutPage onBack={() => openLegalPage(null)} />
+          ) : legalPage === 'terms' ? (
             <TermsPage onBack={() => openLegalPage(null)} />
           ) : (
             <PrivacyPage onBack={() => openLegalPage(null)} />

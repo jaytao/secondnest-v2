@@ -1,5 +1,5 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { ChevronLeft, ChevronRight, Star, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { useTags, type Tag } from './useTags'
@@ -13,6 +13,18 @@ interface ExistingImage {
   id: string
   storage_path: string
   position: number
+}
+
+interface ImageSlot {
+  key: string
+  kind: 'existing' | 'new'
+  existingImage?: ExistingImage
+  file?: File
+  previewUrl: string
+}
+
+function getPublicImageUrl(path: string) {
+  return supabase.storage.from('listing-images').getPublicUrl(path).data.publicUrl
 }
 
 interface CreateListingModalProps {
@@ -35,12 +47,29 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(
     new Set(listing?.listing_tags.map((entry) => entry.tag_id) ?? []),
   )
-  const [existingImages] = useState<ExistingImage[]>(listing?.listing_images ?? [])
-  const [removedImageIds, setRemovedImageIds] = useState<Set<string>>(new Set())
-  const [files, setFiles] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [imageSlots, setImageSlots] = useState<ImageSlot[]>(() =>
+    [...(listing?.listing_images ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map((image) => ({
+        key: image.id,
+        kind: 'existing' as const,
+        existingImage: image,
+        previewUrl: getPublicImageUrl(image.storage_path),
+      })),
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const imageSlotsRef = useRef(imageSlots)
+  imageSlotsRef.current = imageSlots
+
+  useEffect(() => {
+    return () => {
+      for (const slot of imageSlotsRef.current) {
+        if (slot.kind === 'new') URL.revokeObjectURL(slot.previewUrl)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (locationTouched || !profile?.location_label) return
@@ -49,12 +78,6 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
       setPendingLocation({ label: profile.location_label, lat: profile.latitude, lon: profile.longitude })
     }
   }, [profile, locationTouched])
-
-  useEffect(() => {
-    const urls = files.map((file) => URL.createObjectURL(file))
-    setPreviewUrls(urls)
-    return () => urls.forEach((url) => URL.revokeObjectURL(url))
-  }, [files])
 
   function toggleTag(tag: Tag) {
     setSelectedTagIds((current) => {
@@ -72,19 +95,42 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
 
   function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? [])
-    setFiles((current) => [...current, ...selected])
+    const newSlots: ImageSlot[] = selected.map((file) => ({
+      key: `new-${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+      kind: 'new',
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }))
+    setImageSlots((current) => [...current, ...newSlots])
+    event.target.value = ''
   }
 
-  function removeFile(index: number) {
-    setFiles((current) => current.filter((_, i) => i !== index))
+  function removeSlot(key: string) {
+    setImageSlots((current) => {
+      const slot = current.find((s) => s.key === key)
+      if (slot?.kind === 'new') URL.revokeObjectURL(slot.previewUrl)
+      return current.filter((s) => s.key !== key)
+    })
   }
 
-  function removeExistingImage(imageId: string) {
-    setRemovedImageIds((current) => new Set(current).add(imageId))
+  function moveSlot(index: number, direction: -1 | 1) {
+    setImageSlots((current) => {
+      const target = index + direction
+      if (target < 0 || target >= current.length) return current
+      const next = [...current]
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
   }
 
-  function getImageUrl(path: string) {
-    return supabase.storage.from('listing-images').getPublicUrl(path).data.publicUrl
+  function makeCover(index: number) {
+    setImageSlots((current) => {
+      if (index === 0) return current
+      const next = [...current]
+      const [item] = next.splice(index, 1)
+      next.unshift(item)
+      return next
+    })
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -115,42 +161,54 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
       return
     }
 
-    const keptExisting = existingImages.filter((image) => !removedImageIds.has(image.id))
-    if (removedImageIds.size > 0) {
-      const toRemove = existingImages.filter((image) => removedImageIds.has(image.id))
-      await supabase.storage.from('listing-images').remove(toRemove.map((image) => image.storage_path))
+    const keptExistingIds = new Set(
+      imageSlots.filter((slot) => slot.kind === 'existing').map((slot) => slot.existingImage!.id),
+    )
+    const removedExisting = (listing?.listing_images ?? []).filter((image) => !keptExistingIds.has(image.id))
+    if (removedExisting.length > 0) {
+      await supabase.storage.from('listing-images').remove(removedExisting.map((image) => image.storage_path))
       await supabase
         .from('listing_images')
         .delete()
-        .in('id', toRemove.map((image) => image.id))
+        .in('id', removedExisting.map((image) => image.id))
     }
 
-    if (files.length > 0) {
-      const startPosition = keptExisting.length > 0 ? Math.max(...keptExisting.map((image) => image.position)) + 1 : 0
-      const uploads = await Promise.all(
-        files.map(async (file, index) => {
-          const position = startPosition + index
-          const path = `${session.user.id}/${savedListing.id}/${position}-${file.name}`
-          const { error: uploadError } = await supabase.storage.from('listing-images').upload(path, file)
-          return { path, position, uploadError }
-        }),
+    const uploadResults = await Promise.all(
+      imageSlots.map(async (slot, index) => {
+        if (slot.kind !== 'new') return null
+        const path = `${session.user.id}/${savedListing.id}/${index}-${slot.file!.name}`
+        const { error: uploadError } = await supabase.storage.from('listing-images').upload(path, slot.file!)
+        return { index, path, uploadError }
+      }),
+    )
+
+    const failedUpload = uploadResults.find((result) => result?.uploadError)
+    if (failedUpload?.uploadError) {
+      setError(`Listing saved, but an image failed to upload: ${failedUpload.uploadError.message}`)
+    }
+
+    const newImageInserts = uploadResults
+      .filter((result) => result && !result.uploadError)
+      .map((result) => ({ listing_id: savedListing.id, storage_path: result!.path, position: result!.index }))
+
+    if (newImageInserts.length > 0) {
+      await supabase.from('listing_images').insert(newImageInserts)
+    }
+
+    const positionUpdates = imageSlots
+      .map((slot, index) =>
+        slot.kind === 'existing' && slot.existingImage!.position !== index
+          ? { id: slot.existingImage!.id, position: index }
+          : null,
       )
+      .filter((update): update is { id: string; position: number } => update !== null)
 
-      const failed = uploads.find((upload) => upload.uploadError)
-      if (failed?.uploadError) {
-        setError(`Listing saved, but an image failed to upload: ${failed.uploadError.message}`)
-      }
-
-      const succeeded = uploads.filter((upload) => !upload.uploadError)
-      if (succeeded.length > 0) {
-        await supabase.from('listing_images').insert(
-          succeeded.map((upload) => ({
-            listing_id: savedListing.id,
-            storage_path: upload.path,
-            position: upload.position,
-          })),
-        )
-      }
+    if (positionUpdates.length > 0) {
+      await Promise.all(
+        positionUpdates.map((update) =>
+          supabase.from('listing_images').update({ position: update.position }).eq('id', update.id),
+        ),
+      )
     }
 
     if (isEditing) {
@@ -246,27 +304,61 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
             <input type="file" accept="image/*" multiple onChange={handleFilesChange} />
           </label>
 
-          {(existingImages.length > 0 || files.length > 0) && (
-            <ul className="file-preview-grid">
-              {existingImages
-                .filter((image) => !removedImageIds.has(image.id))
-                .map((image) => (
-                  <li key={image.id} className="file-preview-item">
-                    <img src={getImageUrl(image.storage_path)} alt="" />
-                    <button type="button" onClick={() => removeExistingImage(image.id)} aria-label="Remove photo">
+          {imageSlots.length > 0 && (
+            <>
+              <p className="file-preview-hint">The first photo is what shows up on the listing. Use the arrows to reorder, or the star to set a cover photo.</p>
+              <ul className="file-preview-grid">
+                {imageSlots.map((slot, index) => (
+                  <li key={slot.key} className={`file-preview-item ${index === 0 ? 'is-cover' : ''}`}>
+                    <img src={slot.previewUrl} alt="" />
+
+                    {index === 0 ? (
+                      <span className="file-preview-cover-badge">
+                        <Star size={12} /> Cover
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="file-preview-make-cover"
+                        onClick={() => makeCover(index)}
+                        aria-label="Set as cover photo"
+                        title="Set as cover photo"
+                      >
+                        <Star size={14} />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="file-preview-remove"
+                      onClick={() => removeSlot(slot.key)}
+                      aria-label="Remove photo"
+                    >
                       <X size={14} />
                     </button>
+
+                    <div className="file-preview-move">
+                      <button
+                        type="button"
+                        onClick={() => moveSlot(index, -1)}
+                        disabled={index === 0}
+                        aria-label="Move earlier"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSlot(index, 1)}
+                        disabled={index === imageSlots.length - 1}
+                        aria-label="Move later"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
                   </li>
                 ))}
-              {files.map((file, index) => (
-                <li key={`${file.name}-${index}`} className="file-preview-item">
-                  <img src={previewUrls[index]} alt={file.name} />
-                  <button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`}>
-                    <X size={14} />
-                  </button>
-                </li>
-              ))}
-            </ul>
+              </ul>
+            </>
           )}
 
           {error && <p className="modal-error">{error}</p>}

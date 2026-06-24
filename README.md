@@ -37,3 +37,19 @@ it to GitHub Pages. One-time setup in the repo on GitHub:
 
 The build injects those secrets as the same `VITE_*` env vars used locally. The Vite `base` path is
 `/` since a dedicated custom domain serves at the root, not a `/repo-name/` subpath.
+
+## Backup: deploying to a plain server
+
+If this ever needs to move off GitHub Pages, [scripts/deploy-server.sh](scripts/deploy-server.sh)
+builds the app and `rsync`s `dist/` to any server over SSH — no GitHub Pages dependency. The app
+needs no server-side routing config (it has no path-based routes — see CLAUDE.md's "Navigation"
+section), so any static file server (nginx, Apache, Caddy) works as-is.
+
+```sh
+cp .env.deploy.example .env.deploy   # fill in your server + Supabase details
+./scripts/deploy-server.sh
+```
+
+Remember to add that server's URL to Supabase's **Authentication → URL Configuration → Redirect
+URLs** (and the OAuth client's Authorized JavaScript origins, if using Google sign-in) — the app
+won't be reachable there otherwise even though the files deployed fine.

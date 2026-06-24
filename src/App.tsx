@@ -11,6 +11,7 @@ import { ListingDetailPage } from './pages/ListingDetailPage'
 import { PublicProfilePage } from './pages/PublicProfilePage'
 import { CreateListingModal } from './listings/CreateListingModal'
 import { useUnreadCount } from './messaging/useUnreadCount'
+import { Footer } from './components/Footer'
 import type { ListingSelection } from './listings/types'
 import './App.css'
 
@@ -107,6 +108,7 @@ function App() {
           <MyListingsPage />
         )}
       </main>
+      <Footer />
       {isCreateOpen && (
         <CreateListingModal
           onClose={() => setIsCreateOpen(false)}

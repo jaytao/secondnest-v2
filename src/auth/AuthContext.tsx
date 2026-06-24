@@ -42,7 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      verifyAndSet(nextSession)
+      // Defer: calling other supabase.auth methods (signOut) synchronously
+      // inside this callback can deadlock the auth client.
+      setTimeout(() => verifyAndSet(nextSession), 0)
     })
 
     return () => listener.subscription.unsubscribe()

@@ -1,9 +1,27 @@
 .auth-page {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 1.5rem;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-brand-icon {
+  font-size: 1.8rem;
+}
+
+.auth-brand-name {
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: #d6336c;
 }
 
 .auth-form {

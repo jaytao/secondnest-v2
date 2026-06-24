@@ -1,0 +1,27 @@
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.5rem 0;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.app-footer button {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.legal-overlay {
+  position: fixed;
+  inset: 0;
+  background: white;
+  overflow-y: auto;
+  z-index: 200;
+}

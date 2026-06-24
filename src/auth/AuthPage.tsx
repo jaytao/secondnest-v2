@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { Footer } from '../components/Footer'
 import './AuthPage.css'
 
 type Mode = 'sign-in' | 'sign-up'
@@ -37,7 +38,10 @@ export function AuthPage() {
 
   async function handleGoogleSignIn() {
     setError(null)
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
+    })
     if (error) setError(error.message)
   }
 
@@ -49,6 +53,10 @@ export function AuthPage() {
 
   return (
     <div className="auth-page">
+      <div className="auth-brand">
+        <span className="auth-brand-icon">🐣</span>
+        <span className="auth-brand-name">secondnest</span>
+      </div>
       <form className="auth-form" onSubmit={handleSubmit}>
         <h1>{mode === 'sign-in' ? 'Log in' : 'Create an account'}</h1>
 
@@ -92,6 +100,8 @@ export function AuthPage() {
           {mode === 'sign-in' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
         </button>
       </form>
+
+      <Footer />
     </div>
   )
 }

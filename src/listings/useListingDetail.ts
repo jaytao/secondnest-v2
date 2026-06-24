@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Tag } from './useTags'
 import type { DisplayTag } from './TagChips'
+import type { MyListing } from './useMyListings'
 
 export interface ListingDetail {
   id: string
@@ -11,8 +12,8 @@ export interface ListingDetail {
   location_label: string | null
   status: 'active' | 'pending' | 'given_away' | 'removed'
   created_at: string
-  listing_images: { storage_path: string; position: number }[]
-  listing_tags: { tags: { category: Tag['category']; value: string } }[]
+  listing_images: { id: string; storage_path: string; position: number }[]
+  listing_tags: { tag_id: string; tags: { category: Tag['category']; value: string } }[]
   profiles: { display_name: string; avatar_url: string | null } | null
 }
 
@@ -21,31 +22,28 @@ export function useListingDetail(id: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const refetch = useCallback(async () => {
     setLoading(true)
     setError(null)
 
-    supabase
+    const { data, error } = await supabase
       .from('listings')
       .select(
-        'id, owner_id, title, description, location_label, status, created_at, listing_images(storage_path, position), listing_tags(tags(category, value)), profiles(display_name, avatar_url)',
+        'id, owner_id, title, description, location_label, status, created_at, listing_images(id, storage_path, position), listing_tags(tag_id, tags(category, value)), profiles(display_name, avatar_url)',
       )
       .eq('id', id)
       .single()
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error) setError(error.message)
-        else setListing(data as unknown as ListingDetail)
-        setLoading(false)
-      })
 
-    return () => {
-      cancelled = true
-    }
+    if (error) setError(error.message)
+    else setListing(data as unknown as ListingDetail)
+    setLoading(false)
   }, [id])
 
-  return { listing, loading, error }
+  useEffect(() => {
+    refetch()
+  }, [refetch])
+
+  return { listing, loading, error, refetch }
 }
 
 export function getListingImageUrls(listing: ListingDetail): string[] {
@@ -56,4 +54,17 @@ export function getListingImageUrls(listing: ListingDetail): string[] {
 
 export function getListingDetailTags(listing: ListingDetail): DisplayTag[] {
   return listing.listing_tags.map((entry) => entry.tags)
+}
+
+export function toEditableListing(listing: ListingDetail): MyListing {
+  return {
+    id: listing.id,
+    title: listing.title,
+    description: listing.description,
+    location_label: listing.location_label,
+    status: listing.status,
+    created_at: listing.created_at,
+    listing_images: listing.listing_images,
+    listing_tags: listing.listing_tags.map((entry) => ({ tag_id: entry.tag_id })),
+  }
 }

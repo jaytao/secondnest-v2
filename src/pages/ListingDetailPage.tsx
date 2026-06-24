@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { useListingDetail, getListingImageUrls, getListingDetailTags } from '../listings/useListingDetail'
+import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react'
+import { useListingDetail, getListingImageUrls, getListingDetailTags, toEditableListing } from '../listings/useListingDetail'
 import { TagChips } from '../listings/TagChips'
+import { CreateListingModal } from '../listings/CreateListingModal'
 import { useAuth } from '../auth/AuthContext'
 import { startConversation } from '../messaging/useConversations'
 import type { ListingSelection } from '../listings/types'
@@ -44,6 +45,54 @@ function BackButton({ onBack }: { onBack: () => void }) {
   )
 }
 
+function ImageLightbox({
+  urls,
+  startIndex,
+  onClose,
+}: {
+  urls: string[]
+  startIndex: number
+  onClose: () => void
+}) {
+  const [index, setIndex] = useState(startIndex)
+
+  return (
+    <div className="lightbox-overlay" onClick={onClose}>
+      <button className="lightbox-close" onClick={onClose} aria-label="Close">
+        <X size={32} />
+      </button>
+
+      {urls.length > 1 && (
+        <button
+          className="lightbox-nav lightbox-prev"
+          aria-label="Previous image"
+          onClick={(event) => {
+            event.stopPropagation()
+            setIndex((current) => (current - 1 + urls.length) % urls.length)
+          }}
+        >
+          <ChevronLeft size={36} />
+        </button>
+      )}
+
+      <img src={urls[index]} alt="" className="lightbox-image" onClick={(event) => event.stopPropagation()} />
+
+      {urls.length > 1 && (
+        <button
+          className="lightbox-nav lightbox-next"
+          aria-label="Next image"
+          onClick={(event) => {
+            event.stopPropagation()
+            setIndex((current) => (current + 1) % urls.length)
+          }}
+        >
+          <ChevronRight size={36} />
+        </button>
+      )}
+    </div>
+  )
+}
+
 function RealListingDetail({
   id,
   onBack,
@@ -58,9 +107,11 @@ function RealListingDetail({
   onViewProfile: (userId: string) => void
 }) {
   const { session } = useAuth()
-  const { listing, loading, error } = useListingDetail(id)
+  const { listing, loading, error, refetch } = useListingDetail(id)
   const [starting, setStarting] = useState(false)
   const [messageError, setMessageError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   if (loading) return <p className="home-status">Loading listing…</p>
   if (error) return <p className="home-status home-error">Couldn't load listing: {error}</p>
@@ -88,11 +139,26 @@ function RealListingDetail({
 
   return (
     <div className="listing-detail">
-      <BackButton onBack={onBack} />
+      <div className="listing-detail-top">
+        <BackButton onBack={onBack} />
+        {isOwnListing && (
+          <button className="listing-detail-edit" onClick={() => setIsEditing(true)}>
+            <Pencil size={16} /> Edit
+          </button>
+        )}
+      </div>
 
       <div className="listing-detail-gallery">
         {imageUrls.length > 0 ? (
-          imageUrls.map((url) => <img key={url} src={url} alt={listing.title} />)
+          imageUrls.map((url, index) => (
+            <img
+              key={url}
+              src={url}
+              alt={listing.title}
+              onClick={() => setLightboxIndex(index)}
+              className="listing-detail-gallery-photo"
+            />
+          ))
         ) : (
           <div className="listing-detail-gallery-placeholder" />
         )}
@@ -122,6 +188,21 @@ function RealListingDetail({
         <button className="listing-detail-message" onClick={handleMessageSeller} disabled={starting}>
           {starting ? 'Starting chat…' : session ? 'Message seller' : 'Log in to message seller'}
         </button>
+      )}
+
+      {lightboxIndex !== null && (
+        <ImageLightbox urls={imageUrls} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+
+      {isEditing && (
+        <CreateListingModal
+          listing={toEditableListing(listing)}
+          onClose={() => setIsEditing(false)}
+          onSaved={() => {
+            setIsEditing(false)
+            refetch()
+          }}
+        />
       )}
     </div>
   )

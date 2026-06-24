@@ -28,19 +28,21 @@
 .home-location-row {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .home-location-row .location-autocomplete {
   max-width: 320px;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 200px;
 }
 
 .home-radius-select {
   padding: 0.55rem 0.6rem;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 0.85rem;
+  font-size: 1rem;
   background: white;
 }
 

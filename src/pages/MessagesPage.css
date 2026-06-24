@@ -198,10 +198,11 @@
 
 .message-composer input {
   flex: 1;
+  min-width: 0;
   padding: 0.6rem 0.85rem;
   border-radius: 999px;
   border: 1px solid #ccc;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .message-composer button {

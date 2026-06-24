@@ -8,6 +8,42 @@
   color: #c0392b;
 }
 
+.home-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.5rem 0;
+}
+
+.home-pagination button {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.home-pagination button.active {
+  background: #d6336c;
+  border-color: #d6336c;
+  color: white;
+}
+
+.home-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.home-infinite-scroll-sentinel {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .home-hint {
   padding: 1rem 0 0;
   font-size: 0.85rem;

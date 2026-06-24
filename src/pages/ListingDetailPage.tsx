@@ -1,19 +1,23 @@
+import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useListingDetail, getListingImageUrls, getListingDetailTags } from '../listings/useListingDetail'
 import { TagChips } from '../listings/TagChips'
+import { useAuth } from '../auth/AuthContext'
+import { startConversation } from '../messaging/useConversations'
 import type { ListingSelection } from '../listings/types'
 import './ListingDetailPage.css'
 
 interface ListingDetailPageProps {
   selection: ListingSelection
   onBack: () => void
+  onOpenConversation: (conversationId: string) => void
 }
 
-export function ListingDetailPage({ selection, onBack }: ListingDetailPageProps) {
+export function ListingDetailPage({ selection, onBack, onOpenConversation }: ListingDetailPageProps) {
   if (selection.kind === 'dummy') {
     return <DummyListingDetail listing={selection.listing} onBack={onBack} />
   }
-  return <RealListingDetail id={selection.id} onBack={onBack} />
+  return <RealListingDetail id={selection.id} onBack={onBack} onOpenConversation={onOpenConversation} />
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -24,8 +28,19 @@ function BackButton({ onBack }: { onBack: () => void }) {
   )
 }
 
-function RealListingDetail({ id, onBack }: { id: string; onBack: () => void }) {
+function RealListingDetail({
+  id,
+  onBack,
+  onOpenConversation,
+}: {
+  id: string
+  onBack: () => void
+  onOpenConversation: (conversationId: string) => void
+}) {
+  const { session } = useAuth()
   const { listing, loading, error } = useListingDetail(id)
+  const [starting, setStarting] = useState(false)
+  const [messageError, setMessageError] = useState<string | null>(null)
 
   if (loading) return <p className="home-status">Loading listing…</p>
   if (error) return <p className="home-status home-error">Couldn't load listing: {error}</p>
@@ -33,6 +48,20 @@ function RealListingDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
   const imageUrls = getListingImageUrls(listing)
   const tags = getListingDetailTags(listing)
+  const isOwnListing = session?.user.id === listing.owner_id
+
+  async function handleMessageSeller() {
+    if (!session) return
+    setStarting(true)
+    setMessageError(null)
+    const { id: conversationId, error } = await startConversation(listing!.id, listing!.owner_id, session.user.id)
+    setStarting(false)
+    if (error || !conversationId) {
+      setMessageError(error ?? 'Failed to start conversation')
+      return
+    }
+    onOpenConversation(conversationId)
+  }
 
   return (
     <div className="listing-detail">
@@ -64,9 +93,13 @@ function RealListingDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
       )}
 
-      <button className="listing-detail-message" disabled title="Chat coming soon">
-        Message seller
-      </button>
+      {messageError && <p className="modal-error">{messageError}</p>}
+
+      {!isOwnListing && (
+        <button className="listing-detail-message" onClick={handleMessageSeller} disabled={starting}>
+          {starting ? 'Starting chat…' : 'Message seller'}
+        </button>
+      )}
     </div>
   )
 }

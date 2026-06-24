@@ -6,20 +6,26 @@ import { supabase } from './lib/supabase'
 import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { MyListingsPage } from './pages/MyListingsPage'
+import { MessagesPage } from './pages/MessagesPage'
 import { ListingDetailPage } from './pages/ListingDetailPage'
+import { PublicProfilePage } from './pages/PublicProfilePage'
 import { CreateListingModal } from './listings/CreateListingModal'
+import { useUnreadCount } from './messaging/useUnreadCount'
 import type { ListingSelection } from './listings/types'
 import './App.css'
 
-type Page = 'home' | 'profile' | 'my-listings'
+type Page = 'home' | 'profile' | 'my-listings' | 'messages'
 
 function App() {
   const { session, loading } = useAuth()
+  const { count: unreadCount } = useUnreadCount()
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState<Page>('home')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [listingsVersion, setListingsVersion] = useState(0)
   const [selectedListing, setSelectedListing] = useState<ListingSelection | null>(null)
+  const [openConversationId, setOpenConversationId] = useState<string | null>(null)
+  const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
 
   if (loading) return null
 
@@ -28,6 +34,7 @@ function App() {
   function goTo(nextPage: Page) {
     setPage(nextPage)
     setSelectedListing(null)
+    setViewedProfileId(null)
   }
 
   return (
@@ -52,8 +59,17 @@ function App() {
           >
             <CirclePlus size={20} />
           </button>
-          <button className="app-icon-button" title="Messages" aria-label="Messages">
+          <button
+            className="app-icon-button"
+            title="Messages"
+            aria-label="Messages"
+            onClick={() => {
+              setOpenConversationId(null)
+              goTo('messages')
+            }}
+          >
             <MessageCircle size={20} />
+            {unreadCount > 0 && <span className="app-icon-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           <button className="app-icon-button" title="Profile" aria-label="Profile" onClick={() => goTo('profile')}>
             <User size={20} />
@@ -69,12 +85,24 @@ function App() {
         </div>
       </header>
       <main>
-        {selectedListing ? (
-          <ListingDetailPage selection={selectedListing} onBack={() => setSelectedListing(null)} />
+        {viewedProfileId ? (
+          <PublicProfilePage userId={viewedProfileId} onBack={() => setViewedProfileId(null)} />
+        ) : selectedListing ? (
+          <ListingDetailPage
+            selection={selectedListing}
+            onBack={() => setSelectedListing(null)}
+            onOpenConversation={(conversationId) => {
+              setOpenConversationId(conversationId)
+              setSelectedListing(null)
+              setPage('messages')
+            }}
+          />
         ) : page === 'home' ? (
           <HomePage key={listingsVersion} searchQuery={searchQuery} onSelectListing={setSelectedListing} />
         ) : page === 'profile' ? (
           <ProfilePage onManageListings={() => goTo('my-listings')} />
+        ) : page === 'messages' ? (
+          <MessagesPage initialConversationId={openConversationId} onViewProfile={setViewedProfileId} />
         ) : (
           <MyListingsPage />
         )}

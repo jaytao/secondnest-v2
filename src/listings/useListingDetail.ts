@@ -5,6 +5,7 @@ import type { DisplayTag } from './TagChips'
 
 export interface ListingDetail {
   id: string
+  owner_id: string
   title: string
   description: string | null
   location_label: string | null
@@ -28,7 +29,7 @@ export function useListingDetail(id: string) {
     supabase
       .from('listings')
       .select(
-        'id, title, description, location_label, status, created_at, listing_images(storage_path, position), listing_tags(tags(category, value)), profiles(display_name, avatar_url)',
+        'id, owner_id, title, description, location_label, status, created_at, listing_images(storage_path, position), listing_tags(tags(category, value)), profiles(display_name, avatar_url)',
       )
       .eq('id', id)
       .single()

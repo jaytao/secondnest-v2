@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CirclePlus, LogIn, LogOut, MessageCircle, User } from 'lucide-react'
 import { AuthPage } from './auth/AuthPage'
 import { useAuth } from './auth/AuthContext'
@@ -12,10 +12,13 @@ import { PublicProfilePage } from './pages/PublicProfilePage'
 import { CreateListingModal } from './listings/CreateListingModal'
 import { useUnreadCount } from './messaging/useUnreadCount'
 import { Footer } from './components/Footer'
+import { getInitialDeepLink, setDeepLinkParam } from './lib/deepLink'
 import type { ListingSelection } from './listings/types'
 import './App.css'
 
 type Page = 'home' | 'profile' | 'my-listings' | 'messages'
+
+const initialDeepLink = getInitialDeepLink()
 
 function App() {
   const { session, loading } = useAuth()
@@ -25,9 +28,21 @@ function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [listingsVersion, setListingsVersion] = useState(0)
-  const [selectedListing, setSelectedListing] = useState<ListingSelection | null>(null)
+  const [selectedListing, setSelectedListing] = useState<ListingSelection | null>(
+    initialDeepLink?.key === 'listing' ? { kind: 'real', id: initialDeepLink.value } : null,
+  )
   const [openConversationId, setOpenConversationId] = useState<string | null>(null)
-  const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
+  const [viewedProfileId, setViewedProfileId] = useState<string | null>(
+    initialDeepLink?.key === 'profile' ? initialDeepLink.value : null,
+  )
+
+  // Keep the URL's deep-link param in sync with whichever of these is actually
+  // showing, mirroring the render priority below (profile beats listing).
+  useEffect(() => {
+    if (viewedProfileId) setDeepLinkParam('profile', viewedProfileId)
+    else if (selectedListing?.kind === 'real') setDeepLinkParam('listing', selectedListing.id)
+    else setDeepLinkParam(null)
+  }, [viewedProfileId, selectedListing])
 
   if (loading) return null
 
@@ -107,12 +122,20 @@ function App() {
         {showAuth && !session ? (
           <AuthPage />
         ) : viewedProfileId ? (
-          <PublicProfilePage userId={viewedProfileId} onBack={() => setViewedProfileId(null)} />
+          <PublicProfilePage
+            userId={viewedProfileId}
+            onBack={() => setViewedProfileId(null)}
+            onSelectListing={(selection) => {
+              setSelectedListing(selection)
+              setViewedProfileId(null)
+            }}
+          />
         ) : selectedListing ? (
           <ListingDetailPage
             selection={selectedListing}
             onBack={() => setSelectedListing(null)}
             onRequireAuth={() => setShowAuth(true)}
+            onViewProfile={setViewedProfileId}
             onOpenConversation={(conversationId) => {
               setOpenConversationId(conversationId)
               setSelectedListing(null)

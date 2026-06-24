@@ -6,6 +6,7 @@ export interface PublicProfile {
   display_name: string
   avatar_url: string | null
   location_label: string | null
+  introduction: string | null
 }
 
 export function usePublicProfile(userId: string) {
@@ -20,7 +21,7 @@ export function usePublicProfile(userId: string) {
 
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_url, location_label')
+      .select('id, display_name, avatar_url, location_label, introduction')
       .eq('id', userId)
       .single()
       .then(({ data, error }) => {

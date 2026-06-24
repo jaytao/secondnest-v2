@@ -45,3 +45,75 @@
   color: #888;
   margin: 0;
 }
+
+.public-profile-introduction {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+  text-align: left;
+}
+
+.public-profile-view-listings {
+  margin-top: 0.75rem;
+}
+
+.seller-listing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.seller-listing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.seller-listing-row:hover {
+  background: #fdeef2;
+}
+
+.seller-listing-thumb,
+.seller-listing-thumb-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #f3f3f3;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.seller-listing-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.seller-listing-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seller-listing-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seller-listing-location {
+  font-size: 0.7rem;
+  color: #888;
+}

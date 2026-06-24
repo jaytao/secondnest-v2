@@ -12,14 +12,27 @@ interface ListingDetailPageProps {
   onBack: () => void
   onOpenConversation: (conversationId: string) => void
   onRequireAuth: () => void
+  onViewProfile: (userId: string) => void
 }
 
-export function ListingDetailPage({ selection, onBack, onOpenConversation, onRequireAuth }: ListingDetailPageProps) {
+export function ListingDetailPage({
+  selection,
+  onBack,
+  onOpenConversation,
+  onRequireAuth,
+  onViewProfile,
+}: ListingDetailPageProps) {
   if (selection.kind === 'dummy') {
     return <DummyListingDetail listing={selection.listing} onBack={onBack} />
   }
   return (
-    <RealListingDetail id={selection.id} onBack={onBack} onOpenConversation={onOpenConversation} onRequireAuth={onRequireAuth} />
+    <RealListingDetail
+      id={selection.id}
+      onBack={onBack}
+      onOpenConversation={onOpenConversation}
+      onRequireAuth={onRequireAuth}
+      onViewProfile={onViewProfile}
+    />
   )
 }
 
@@ -36,11 +49,13 @@ function RealListingDetail({
   onBack,
   onOpenConversation,
   onRequireAuth,
+  onViewProfile,
 }: {
   id: string
   onBack: () => void
   onOpenConversation: (conversationId: string) => void
   onRequireAuth: () => void
+  onViewProfile: (userId: string) => void
 }) {
   const { session } = useAuth()
   const { listing, loading, error } = useListingDetail(id)
@@ -91,14 +106,14 @@ function RealListingDetail({
       {listing.description && <p className="listing-detail-description">{listing.description}</p>}
 
       {listing.profiles && (
-        <div className="listing-detail-seller">
+        <button className="listing-detail-seller" onClick={() => onViewProfile(listing.owner_id)}>
           {listing.profiles.avatar_url ? (
             <img src={listing.profiles.avatar_url} alt={listing.profiles.display_name} />
           ) : (
             <span className="listing-detail-seller-initial">{listing.profiles.display_name.charAt(0).toUpperCase()}</span>
           )}
           <span>{listing.profiles.display_name}</span>
-        </div>
+        </button>
       )}
 
       {messageError && <p className="modal-error">{messageError}</p>}

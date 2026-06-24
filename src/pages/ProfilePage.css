@@ -69,11 +69,19 @@
   font-size: 0.875rem;
 }
 
-.profile-field input {
+.profile-field input,
+.profile-field textarea {
   padding: 0.55rem 0.75rem;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.profile-field-optional {
+  font-weight: 400;
+  color: #999;
 }
 
 .profile-error {

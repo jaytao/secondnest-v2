@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react'
 import { TermsPage } from '../pages/TermsPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
+import { getInitialDeepLink, setDeepLinkParam } from '../lib/deepLink'
 import './Footer.css'
 
 type LegalPage = 'terms' | 'privacy' | null
+
+function readInitialLegalPage(): LegalPage {
+  const link = getInitialDeepLink()
+  if (link?.key === 'legal' && (link.value === 'terms' || link.value === 'privacy')) return link.value
+  return null
+}
 
 function readLegalPageFromUrl(): LegalPage {
   const value = new URLSearchParams(window.location.search).get('legal')
   return value === 'terms' || value === 'privacy' ? value : null
 }
 
-function writeLegalPageToUrl(page: LegalPage) {
-  const url = new URL(window.location.href)
-  if (page) url.searchParams.set('legal', page)
-  else url.searchParams.delete('legal')
-  window.history.pushState(null, '', url)
-}
-
 export function Footer() {
-  const [legalPage, setLegalPage] = useState<LegalPage>(readLegalPageFromUrl)
+  const [legalPage, setLegalPage] = useState<LegalPage>(readInitialLegalPage)
 
   useEffect(() => {
     function handlePopState() {
@@ -30,7 +30,7 @@ export function Footer() {
 
   function openLegalPage(page: LegalPage) {
     setLegalPage(page)
-    writeLegalPageToUrl(page)
+    setDeepLinkParam(page ? 'legal' : null, page ?? undefined)
   }
 
   return (

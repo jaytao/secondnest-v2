@@ -11,6 +11,7 @@ export function ProfilePage({ onManageListings }: ProfilePageProps) {
   const { profile, loading, error, updateProfile, uploadAvatar } = useProfile()
   const [displayName, setDisplayName] = useState('')
   const [locationLabel, setLocationLabel] = useState('')
+  const [introduction, setIntroduction] = useState('')
   const [pendingLocation, setPendingLocation] = useState<LocationSuggestion | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -21,6 +22,7 @@ export function ProfilePage({ onManageListings }: ProfilePageProps) {
     if (profile) {
       setDisplayName(profile.display_name)
       setLocationLabel(profile.location_label ?? '')
+      setIntroduction(profile.introduction ?? '')
     }
   }, [profile])
 
@@ -37,6 +39,7 @@ export function ProfilePage({ onManageListings }: ProfilePageProps) {
     const { error } = await updateProfile({
       display_name: displayName,
       location_label: locationLabel,
+      introduction: introduction.trim() || null,
       ...(pendingLocation ? { lat: pendingLocation.lat, lon: pendingLocation.lon } : {}),
     })
 
@@ -89,6 +92,17 @@ export function ProfilePage({ onManageListings }: ProfilePageProps) {
             setLocationLabel(suggestion.label)
             setPendingLocation(suggestion)
           }}
+        />
+      </label>
+
+      <label className="profile-field">
+        Introduction <span className="profile-field-optional">(optional)</span>
+        <textarea
+          value={introduction}
+          onChange={(event) => setIntroduction(event.target.value)}
+          rows={3}
+          maxLength={500}
+          placeholder="Say a little about yourself…"
         />
       </label>
 

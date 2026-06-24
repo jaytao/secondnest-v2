@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 
+const PROFILE_COLUMNS = 'id, display_name, avatar_url, location_label, latitude, longitude, introduction'
+
 export interface Profile {
   id: string
   display_name: string
@@ -9,12 +11,14 @@ export interface Profile {
   location_label: string | null
   latitude: number | null
   longitude: number | null
+  introduction: string | null
 }
 
 interface ProfileUpdates {
   display_name?: string
   avatar_url?: string
   location_label?: string
+  introduction?: string | null
   lat?: number
   lon?: number
 }
@@ -32,7 +36,7 @@ export function useProfile() {
 
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_url, location_label, latitude, longitude')
+      .select(PROFILE_COLUMNS)
       .eq('id', session.user.id)
       .single()
       .then(({ data, error }) => {
@@ -60,7 +64,7 @@ export function useProfile() {
       .from('profiles')
       .update(payload)
       .eq('id', session.user.id)
-      .select('id, display_name, avatar_url, location_label, latitude, longitude')
+      .select(PROFILE_COLUMNS)
       .single()
 
     if (!error) setProfile(data)

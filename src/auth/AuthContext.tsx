@@ -9,18 +9,40 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+// A session can be valid per Supabase Auth (auth.users intact) while the app's
+// profiles row is missing — e.g. after a dev data reset, or if a profile is
+// ever deleted independently of its account. Treat that as logged out, since
+// the rest of the app assumes every session has a matching profile.
+async function sessionHasProfile(session: Session): Promise<boolean> {
+  const { data, error } = await supabase.from('profiles').select('id').eq('id', session.user.id).maybeSingle()
+  return !error && data !== null
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+    async function verifyAndSet(nextSession: Session | null) {
+      if (!nextSession) {
+        setSession(null)
+        return
+      }
+      if (await sessionHasProfile(nextSession)) {
+        setSession(nextSession)
+      } else {
+        await supabase.auth.signOut()
+        setSession(null)
+      }
+    }
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      await verifyAndSet(data.session)
       setLoading(false)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      verifyAndSet(nextSession)
     })
 
     return () => listener.subscription.unsubscribe()

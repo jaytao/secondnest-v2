@@ -86,7 +86,7 @@ export function AuthPage() {
         {error && <p className="auth-error">{error}</p>}
         {message && <p className="auth-message">{message}</p>}
 
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? 'Please wait…' : mode === 'sign-in' ? 'Log in' : 'Sign up'}
         </button>
 

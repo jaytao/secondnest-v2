@@ -95,7 +95,7 @@ export function ProfilePage({ onManageListings }: ProfilePageProps) {
       {saveError && <p className="profile-error">{saveError}</p>}
       {saved && <p className="profile-success">Saved!</p>}
 
-      <button type="submit" disabled={saving}>
+      <button type="submit" className="btn-primary" disabled={saving}>
         {saving ? 'Saving…' : 'Save changes'}
       </button>
 

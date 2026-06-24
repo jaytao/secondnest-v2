@@ -271,7 +271,7 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
 
           {error && <p className="modal-error">{error}</p>}
 
-          <button type="submit" disabled={submitting}>
+          <button type="submit" className="btn-primary" disabled={submitting}>
             {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Post listing'}
           </button>
         </form>

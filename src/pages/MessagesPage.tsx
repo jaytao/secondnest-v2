@@ -163,8 +163,8 @@ function ConversationThread({
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Type a message…"
         />
-        <button type="submit" disabled={sending || !draft.trim()} aria-label="Send">
-          <Send size={18} />
+        <button type="submit" disabled={sending || !draft.trim()} aria-label="Send" title="Send">
+          <Send size={32} strokeWidth={2.5} />
         </button>
       </form>
     </div>

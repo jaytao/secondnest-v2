@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CirclePlus, LogOut, MessageCircle, User } from 'lucide-react'
+import { CirclePlus, LogIn, LogOut, MessageCircle, User } from 'lucide-react'
 import { AuthPage } from './auth/AuthPage'
 import { useAuth } from './auth/AuthContext'
 import { supabase } from './lib/supabase'
@@ -23,14 +23,13 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState<Page>('home')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   const [listingsVersion, setListingsVersion] = useState(0)
   const [selectedListing, setSelectedListing] = useState<ListingSelection | null>(null)
   const [openConversationId, setOpenConversationId] = useState<string | null>(null)
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
 
   if (loading) return null
-
-  if (!session) return <AuthPage />
 
   function goTo(nextPage: Page) {
     setPage(nextPage)
@@ -41,7 +40,13 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <button className="app-name" onClick={() => goTo('home')}>
+        <button
+          className="app-name"
+          onClick={() => {
+            goTo('home')
+            setShowAuth(false)
+          }}
+        >
           🐣 secondnest
         </button>
         <input
@@ -52,53 +57,69 @@ function App() {
           onChange={(event) => setSearchQuery(event.target.value)}
         />
         <div className="app-header-icons">
-          <button
-            className="app-icon-button"
-            title="New listing"
-            aria-label="New listing"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <CirclePlus size={20} />
-          </button>
-          <button
-            className="app-icon-button"
-            title="Messages"
-            aria-label="Messages"
-            onClick={() => {
-              setOpenConversationId(null)
-              goTo('messages')
-            }}
-          >
-            <MessageCircle size={20} />
-            {unreadCount > 0 && <span className="app-icon-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-          </button>
-          <button className="app-icon-button" title="Profile" aria-label="Profile" onClick={() => goTo('profile')}>
-            <User size={20} />
-          </button>
-          <button
-            className="app-icon-button"
-            title="Log out"
-            aria-label="Log out"
-            onClick={() => supabase.auth.signOut()}
-          >
-            <LogOut size={20} />
-          </button>
+          {session ? (
+            <>
+              <button
+                className="app-icon-button"
+                title="New listing"
+                aria-label="New listing"
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <CirclePlus size={20} />
+              </button>
+              <button
+                className="app-icon-button"
+                title="Messages"
+                aria-label="Messages"
+                onClick={() => {
+                  setOpenConversationId(null)
+                  goTo('messages')
+                }}
+              >
+                <MessageCircle size={20} />
+                {unreadCount > 0 && <span className="app-icon-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+              </button>
+              <button
+                className="app-icon-button"
+                title="Profile"
+                aria-label="Profile"
+                onClick={() => goTo('profile')}
+              >
+                <User size={20} />
+              </button>
+              <button
+                className="app-icon-button"
+                title="Log out"
+                aria-label="Log out"
+                onClick={() => supabase.auth.signOut()}
+              >
+                <LogOut size={20} />
+              </button>
+            </>
+          ) : (
+            <button className="app-login-button" onClick={() => setShowAuth(true)}>
+              <LogIn size={16} /> Log in
+            </button>
+          )}
         </div>
       </header>
       <main>
-        {viewedProfileId ? (
+        {showAuth && !session ? (
+          <AuthPage />
+        ) : viewedProfileId ? (
           <PublicProfilePage userId={viewedProfileId} onBack={() => setViewedProfileId(null)} />
         ) : selectedListing ? (
           <ListingDetailPage
             selection={selectedListing}
             onBack={() => setSelectedListing(null)}
+            onRequireAuth={() => setShowAuth(true)}
             onOpenConversation={(conversationId) => {
               setOpenConversationId(conversationId)
               setSelectedListing(null)
               setPage('messages')
             }}
           />
-        ) : page === 'home' ? (
+        ) : page === 'home' || !session ? (
           <HomePage key={listingsVersion} searchQuery={searchQuery} onSelectListing={setSelectedListing} />
         ) : page === 'profile' ? (
           <ProfilePage onManageListings={() => goTo('my-listings')} />
@@ -109,7 +130,7 @@ function App() {
         )}
       </main>
       <Footer />
-      {isCreateOpen && (
+      {isCreateOpen && session && (
         <CreateListingModal
           onClose={() => setIsCreateOpen(false)}
           onSaved={() => {

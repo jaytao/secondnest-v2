@@ -89,6 +89,24 @@
   line-height: 1;
 }
 
+.app-login-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #d6336c;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-login-button:hover {
+  background: #a32253;
+}
+
 main {
   max-width: 1280px;
   margin: 0 auto;

@@ -11,13 +11,16 @@ interface ListingDetailPageProps {
   selection: ListingSelection
   onBack: () => void
   onOpenConversation: (conversationId: string) => void
+  onRequireAuth: () => void
 }
 
-export function ListingDetailPage({ selection, onBack, onOpenConversation }: ListingDetailPageProps) {
+export function ListingDetailPage({ selection, onBack, onOpenConversation, onRequireAuth }: ListingDetailPageProps) {
   if (selection.kind === 'dummy') {
     return <DummyListingDetail listing={selection.listing} onBack={onBack} />
   }
-  return <RealListingDetail id={selection.id} onBack={onBack} onOpenConversation={onOpenConversation} />
+  return (
+    <RealListingDetail id={selection.id} onBack={onBack} onOpenConversation={onOpenConversation} onRequireAuth={onRequireAuth} />
+  )
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -32,10 +35,12 @@ function RealListingDetail({
   id,
   onBack,
   onOpenConversation,
+  onRequireAuth,
 }: {
   id: string
   onBack: () => void
   onOpenConversation: (conversationId: string) => void
+  onRequireAuth: () => void
 }) {
   const { session } = useAuth()
   const { listing, loading, error } = useListingDetail(id)
@@ -51,7 +56,10 @@ function RealListingDetail({
   const isOwnListing = session?.user.id === listing.owner_id
 
   async function handleMessageSeller() {
-    if (!session) return
+    if (!session) {
+      onRequireAuth()
+      return
+    }
     setStarting(true)
     setMessageError(null)
     const { id: conversationId, error } = await startConversation(listing!.id, listing!.owner_id, session.user.id)
@@ -97,7 +105,7 @@ function RealListingDetail({
 
       {!isOwnListing && (
         <button className="listing-detail-message" onClick={handleMessageSeller} disabled={starting}>
-          {starting ? 'Starting chat…' : 'Message seller'}
+          {starting ? 'Starting chat…' : session ? 'Message seller' : 'Log in to message seller'}
         </button>
       )}
     </div>

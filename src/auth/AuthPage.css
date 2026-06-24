@@ -71,8 +71,8 @@
 }
 
 .auth-google {
-  background: white;
-  border: 1px solid #ccc;
+  background: #f0f0f0;
+  border: 1px solid #999;
 }
 
 .auth-switch {

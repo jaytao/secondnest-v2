@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { ChevronLeft, ChevronRight, Star, X } from 'lucide-react'
+import { Camera, ChevronLeft, ChevronRight, Star, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { useTags, type Tag } from './useTags'
@@ -299,10 +299,16 @@ export function CreateListingModal({ listing, onClose, onSaved }: CreateListingM
             ))}
           </div>
 
-          <label className="modal-field">
+          <div className="modal-field">
             Photos
-            <input type="file" accept="image/*" multiple onChange={handleFilesChange} />
-          </label>
+            <div className="modal-photo-inputs">
+              <input type="file" accept="image/*" multiple onChange={handleFilesChange} />
+              <label className="modal-camera-button">
+                <Camera size={16} /> Take photo
+                <input type="file" accept="image/*" capture="environment" onChange={handleFilesChange} hidden />
+              </label>
+            </div>
+          </div>
 
           {imageSlots.length > 0 && (
             <>

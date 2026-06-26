@@ -11,5 +11,10 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // Bind to all network interfaces (not just localhost) and accept any Host
+    // header, so the dev server is reachable from other devices on the LAN or
+    // through a tunnel (e.g. testing mobile camera capture on a real phone).
+    host: true,
+    allowedHosts: true,
   },
 })

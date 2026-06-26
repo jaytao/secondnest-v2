@@ -63,6 +63,31 @@
   box-sizing: border-box;
 }
 
+.modal-photo-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.modal-photo-inputs input[type='file']:not([hidden]) {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-camera-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .tag-category {
   margin-top: 0.5rem;
 }
